@@ -1,0 +1,42 @@
+name: Build www
+
+on:
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Use Node 14.21.3
+        uses: actions/setup-node@v4
+        with:
+          node-version: "14.21.3"
+
+      - name: Install system build tools
+        run: sudo apt-get update && sudo apt-get install -y python3 make g++
+
+      - name: Install deps
+        run: |
+          npm config set fund false
+          npm config set audit false
+          npm i --no-audit --no-fund --legacy-peer-deps
+
+      - name: Build (generates www/)
+        run: npm run build-min
+
+      - name: Verify www exists
+        run: test -d www && ls -la www | head
+
+      - name: Zip www
+        run: |
+          cd www
+          zip -r ../www.zip .
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: binary-bot-www
+          path: www.zip
